@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sse/client/sse_client.dart';
 
 void main() {
   runApp(MyApp());
@@ -15,8 +16,20 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
+  final sseClient = SseClient("http://127.0.0.1:8000");
+
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text("[DATA HERE]"));
+    return Center(
+      child: StreamBuilder(
+        stream: sseClient.stream,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Text(snapshot.data);
+          }
+          return Text("");
+        },
+      ),
+    );
   }
 }
