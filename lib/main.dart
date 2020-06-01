@@ -25,8 +25,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final http.Client _client = http.Client();
-  StreamSubscription fibonacciStreamSubscription;
-  bool isStreamPaused = false;
+  Future<http.StreamedResponse> streamedResponseFuture;
 
   @override
   void initState() {
@@ -39,24 +38,36 @@ class _MyHomePageState extends State<MyHomePage> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        Text("[DATA HERE]"),
+        FutureBuilder<http.StreamedResponse>(
+          future: streamedResponseFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              http.StreamedResponse streamedResponse = snapshot.data;
+              return StreamBuilder<String>(
+                  stream: streamedResponse.stream.toStringStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Text('No data yet.');
+                    } else if (snapshot.connectionState ==
+                        ConnectionState.done) {
+                      return Text('Done!');
+                    } else if (snapshot.hasError) {
+                      return Text('Error!');
+                    } else if (snapshot.hasData) {
+                      print(snapshot.data);
+                      return Text(snapshot.data);
+                    }
+                    return Text("No IDEA what's going on.");
+                  });
+            }
+            return CircularProgressIndicator();
+          },
+        ),
         SizedBox(height: 30),
         RaisedButton.icon(
           onPressed: closeClient,
           icon: Icon(Icons.close),
           label: Text("Close the http client"),
-        ),
-        SizedBox(height: 30),
-        RaisedButton.icon(
-          onPressed: isStreamPaused ? resumeStream : pauseStream,
-          icon: Icon(isStreamPaused ? Icons.play_arrow : Icons.pause),
-          label: Text("${isStreamPaused ? "Play" : "Pause"} the stream"),
-        ),
-        SizedBox(height: 30),
-        RaisedButton.icon(
-          onPressed: cancelStream,
-          icon: Icon(Icons.stop),
-          label: Text("Stop the stream"),
         ),
       ],
     );
@@ -65,29 +76,12 @@ class _MyHomePageState extends State<MyHomePage> {
   subscribe() async {
     print("Subscribing...");
     try {
-      var request =
-          new http.Request("GET", Uri.parse("http://localhost:8000/sse"));
+      http.Request request =
+          http.Request("GET", Uri.parse("http://localhost:8000/sse"));
       request.headers["Cache-Control"] = "no-cache";
       request.headers["Accept"] = "text/event-stream";
 
-      Future<http.StreamedResponse> response = _client.send(request);
-      response.asStream().listen((streamedResponse) {
-        print(
-            "Received streamedResponse.statusCode:${streamedResponse.statusCode}");
-        fibonacciStreamSubscription =
-            streamedResponse.stream.toStringStream().listen(
-          (data) {
-            print("Received data: $data");
-          },
-          onDone: () {
-            print("Done with the Stream!");
-          },
-          onError: (error) {
-            print("ERRROR with the Stream! $error");
-          },
-          cancelOnError: true,
-        );
-      });
+      streamedResponseFuture = _client.send(request);
     } catch (e) {
       print("Caught $e");
     }
@@ -95,35 +89,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   closeClient() {
     _client.close();
-    // TODO what does it mean to close the client?
-    print("Closed the client! (whatever that means...)");
-  }
-
-  pauseStream() {
-    fibonacciStreamSubscription.pause();
-    toggleStreamStatus();
-  }
-
-  resumeStream() {
-    fibonacciStreamSubscription.resume();
-    toggleStreamStatus();
-  }
-
-  cancelStream() {
-    fibonacciStreamSubscription.cancel();
-    print("CANCel THe STREAM");
-  }
-
-  toggleStreamStatus() {
-    setState(() {
-      isStreamPaused = !isStreamPaused;
-    });
+    print("Closed the client!");
   }
 
   @override
   void dispose() {
     closeClient();
-    fibonacciStreamSubscription.cancel();
     super.dispose();
   }
 }
