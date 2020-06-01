@@ -16,11 +16,18 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
   final http.Client _client = http.Client();
 
-  MyHomePage() {
+  @override
+  void initState() {
     subscribe();
+    super.initState();
   }
 
   @override
@@ -72,5 +79,11 @@ class MyHomePage extends StatelessWidget {
   closeConnection() {
     _client.close();
     print("Closed the client! (whatever that means...)");
+  }
+
+  @override
+  void dispose() {
+    closeConnection();
+    super.dispose();
   }
 }
