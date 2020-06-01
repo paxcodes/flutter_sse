@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -23,6 +25,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final http.Client _client = http.Client();
+  StreamSubscription fibonacciStreamSubscription;
+  bool isStreamPaused = false;
 
   @override
   void initState() {
@@ -38,9 +42,21 @@ class _MyHomePageState extends State<MyHomePage> {
         Text("[DATA HERE]"),
         SizedBox(height: 30),
         RaisedButton.icon(
-          onPressed: closeConnection,
+          onPressed: closeClient,
           icon: Icon(Icons.close),
           label: Text("Close the http client"),
+        ),
+        SizedBox(height: 30),
+        RaisedButton.icon(
+          onPressed: isStreamPaused ? resumeStream : pauseStream,
+          icon: Icon(isStreamPaused ? Icons.play_arrow : Icons.pause),
+          label: Text("${isStreamPaused ? "Play" : "Pause"} the stream"),
+        ),
+        SizedBox(height: 30),
+        RaisedButton.icon(
+          onPressed: cancelStream,
+          icon: Icon(Icons.stop),
+          label: Text("Stop the stream"),
         ),
       ],
     );
@@ -58,7 +74,8 @@ class _MyHomePageState extends State<MyHomePage> {
       response.asStream().listen((streamedResponse) {
         print(
             "Received streamedResponse.statusCode:${streamedResponse.statusCode}");
-        streamedResponse.stream.toStringStream().listen(
+        fibonacciStreamSubscription =
+            streamedResponse.stream.toStringStream().listen(
           (data) {
             print("Received data: $data");
           },
@@ -76,14 +93,37 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  closeConnection() {
+  closeClient() {
     _client.close();
+    // TODO what does it mean to close the client?
     print("Closed the client! (whatever that means...)");
+  }
+
+  pauseStream() {
+    fibonacciStreamSubscription.pause();
+    toggleStreamStatus();
+  }
+
+  resumeStream() {
+    fibonacciStreamSubscription.resume();
+    toggleStreamStatus();
+  }
+
+  cancelStream() {
+    fibonacciStreamSubscription.cancel();
+    print("CANCel THe STREAM");
+  }
+
+  toggleStreamStatus() {
+    setState(() {
+      isStreamPaused = !isStreamPaused;
+    });
   }
 
   @override
   void dispose() {
-    closeConnection();
+    closeClient();
+    fibonacciStreamSubscription.cancel();
     super.dispose();
   }
 }
