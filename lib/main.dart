@@ -39,7 +39,7 @@ class MyHomePage extends StatelessWidget {
       response.asStream().listen((streamedResponse) {
         print(
             "Received streamedResponse.statusCode:${streamedResponse.statusCode}");
-        streamedResponse.stream.listen((data) {
+        streamedResponse.stream.toStringStream().listen((data) {
           print("Received data: $data");
         });
       });
