@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -24,7 +25,18 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text("[DATA HERE]"));
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Text("[DATA HERE]"),
+        SizedBox(height: 30),
+        RaisedButton.icon(
+          onPressed: closeConnection,
+          icon: Icon(Icons.close),
+          label: Text("Close the http client"),
+        ),
+      ],
+    );
   }
 
   subscribe() async {
@@ -39,12 +51,26 @@ class MyHomePage extends StatelessWidget {
       response.asStream().listen((streamedResponse) {
         print(
             "Received streamedResponse.statusCode:${streamedResponse.statusCode}");
-        streamedResponse.stream.toStringStream().listen((data) {
-          print("Received data: $data");
-        });
+        streamedResponse.stream.toStringStream().listen(
+          (data) {
+            print("Received data: $data");
+          },
+          onDone: () {
+            print("Done with the Stream!");
+          },
+          onError: (error) {
+            print("ERRROR with the Stream! $error");
+          },
+          cancelOnError: true,
+        );
       });
     } catch (e) {
       print("Caught $e");
     }
+  }
+
+  closeConnection() {
+    _client.close();
+    print("Closed the client! (whatever that means...)");
   }
 }
