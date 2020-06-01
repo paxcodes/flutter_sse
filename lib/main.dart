@@ -25,8 +25,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final http.Client _client = http.Client();
-  StreamSubscription fibonacciStreamSubscription;
+//  StreamSubscription fibonacciStreamSubscription;
   bool isStreamPaused = false;
+
+  Future<http.StreamedResponse> streamedResponseFuture;
 
   @override
   void initState() {
@@ -39,7 +41,31 @@ class _MyHomePageState extends State<MyHomePage> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        Text("[DATA HERE]"),
+        FutureBuilder<http.StreamedResponse>(
+          future: streamedResponseFuture,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              http.StreamedResponse streamedResponse = snapshot.data;
+              return StreamBuilder<String>(
+                  stream: streamedResponse.stream.toStringStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Text('No data yet.');
+                    } else if (snapshot.connectionState ==
+                        ConnectionState.done) {
+                      return Text('Done!');
+                    } else if (snapshot.hasError) {
+                      return Text('Error!');
+                    } else if (snapshot.hasData) {
+                      print(snapshot.data);
+                      return Text(snapshot.data);
+                    }
+                    return Text("No IDEA what's going on.");
+                  });
+            }
+            return CircularProgressIndicator();
+          },
+        ),
         SizedBox(height: 30),
         RaisedButton.icon(
           onPressed: closeClient,
@@ -70,24 +96,24 @@ class _MyHomePageState extends State<MyHomePage> {
       request.headers["Cache-Control"] = "no-cache";
       request.headers["Accept"] = "text/event-stream";
 
-      Future<http.StreamedResponse> response = _client.send(request);
-      response.asStream().listen((streamedResponse) {
-        print(
-            "Received streamedResponse.statusCode:${streamedResponse.statusCode}");
-        fibonacciStreamSubscription =
-            streamedResponse.stream.toStringStream().listen(
-          (data) {
-            print("Received data: $data");
-          },
-          onDone: () {
-            print("Done with the Stream!");
-          },
-          onError: (error) {
-            print("ERRROR with the Stream! $error");
-          },
-          cancelOnError: true,
-        );
-      });
+      streamedResponseFuture = _client.send(request);
+//      print("Received streamedResponse.statusCode:${response.statusCode}");
+//      fibonacciStream.asyncExpand((event) => null)
+//      fibonacciStream.cast(response.stream.toStringStream());
+//        fibonacciStreamSubscription =
+//            streamedResponse.stream.toStringStream().listen(
+//          (data) {
+//            print("Received data: $data");
+//          },
+//          onDone: () {
+//            print("Done with the Stream!");
+//          },
+//          onError: (error) {
+//            print("ERRROR with the Stream! $error");
+//          },
+//          cancelOnError: true,
+//        );
+//      });
     } catch (e) {
       print("Caught $e");
     }
@@ -100,17 +126,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   pauseStream() {
-    fibonacciStreamSubscription.pause();
+//    fibonacciStreamSubscription.pause();
     toggleStreamStatus();
   }
 
   resumeStream() {
-    fibonacciStreamSubscription.resume();
+//    fibonacciStreamSubscription.resume();
     toggleStreamStatus();
   }
 
   cancelStream() {
-    fibonacciStreamSubscription.cancel();
+//    fibonacciStreamSubscription.cancel();
     print("CANCel THe STREAM");
   }
 
@@ -123,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     closeClient();
-    fibonacciStreamSubscription.cancel();
+//    fibonacciStreamSubscription.cancel();
     super.dispose();
   }
 }
